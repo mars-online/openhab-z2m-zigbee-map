@@ -1,0 +1,351 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: EPL-2.0 -->
+<!-- Zigbee radio map generator: built by build.js from src/generator.src.html, src/gen.js and the rule sources.
+     A local file: it works offline and sends nothing anywhere. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zigbee radio map generator</title>
+<style>
+:root { color-scheme: light dark; --bg: #f6f7f9; --card: #fff; --text: #1d2125; --muted: #5d6670; --line: #d5dae0;
+  --accent: #1565c0; --err-bg: #fdecea; --err: #a3271c; --code: #eef1f4; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181b; --card: #1f2327; --text: #e4e7ea; --muted: #9aa4ae; --line: #3a4148; --accent: #64a7f0;
+    --err-bg: #3d1f1c; --err: #ffb4a9; --code: #2a2f34; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { padding: 16px; max-width: 1280px; margin: 0 auto; }
+header h1 { margin: 0 0 4px; font-size: 22px; }
+header p { margin: 0; color: var(--muted); }
+main { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 0 16px 24px; max-width: 1280px; margin: 0 auto; }
+@media (min-width: 900px) { main { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+h3 { font-size: 15px; margin: 18px 0 6px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-weight: 600; margin-bottom: 4px; }
+.field label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 600; }
+.hint { color: var(--muted); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+input[type=text], input[type=number], select, textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--card); color: var(--text); font: inherit; }
+input[type=file] { max-width: 100%; }
+textarea { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 600; margin-bottom: 10px; }
+code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-size: 13px; overflow-wrap: anywhere; }
+#zm-summary { font-weight: 600; }
+#zm-errors { margin: 8px 0; padding: 0; list-style: none; }
+#zm-errors li { background: var(--err-bg); color: var(--err); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; }
+.buttons { display: flex; gap: 8px; margin: 6px 0 4px; flex-wrap: wrap; }
+button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+button.secondary { background: transparent; color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
+.out { height: 180px; }
+ol { padding-left: 20px; margin: 6px 0; }
+ol li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.copied { color: var(--muted); font-size: 13px; align-self: center; }
+</style>
+<script>
+/*__GEN__*/
+/*__SOURCES__*/
+</script>
+</head>
+<body>
+<header>
+  <h1 data-t="title"></h1>
+  <p data-t="intro"></p>
+</header>
+<main>
+  <section>
+    <h2 data-t="formTitle"></h2>
+    <div class="field">
+      <label for="zm-lang" data-t="langLabel"></label>
+      <select id="zm-lang"><option value="en">English</option><option value="de">Deutsch</option></select>
+      <div class="hint" data-t="langHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-image" data-t="imageLabel"></label>
+      <input id="zm-image" type="file" accept="image/*">
+      <div class="row2" style="margin-top:6px">
+        <input id="zm-width" type="number" min="100" step="1" value="1000" aria-label="width">
+        <input id="zm-height" type="number" min="100" step="1" value="800" aria-label="height">
+      </div>
+      <div class="hint" data-t="imageHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-url" data-t="urlLabel"></label>
+      <input id="zm-url" type="text" value="/static/floorplan.png">
+      <div class="hint" data-t="urlHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-devices" data-t="devicesLabel"></label>
+      <textarea id="zm-devices" rows="8" spellcheck="false"></textarea>
+      <div class="hint" data-t="devicesHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-thing" data-t="thingLabel"></label>
+      <input id="zm-thing" type="text" placeholder="mqtt:broker:mybroker" spellcheck="false">
+      <div class="hint" data-t="thingHint"></div>
+    </div>
+    <div class="field">
+      <label class="inline"><input id="zm-switch" type="checkbox"> <span data-t="switchLabel"></span></label>
+      <div class="hint" data-t="switchHint"></div>
+    </div>
+    <details>
+      <summary data-t="advanced"></summary>
+      <div class="field">
+        <label for="zm-base" data-t="baseLabel"></label>
+        <input id="zm-base" type="text" value="zigbee2mqtt" spellcheck="false">
+        <div class="hint" data-t="baseHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-timeout" data-t="timeoutLabel"></label>
+        <input id="zm-timeout" type="number" min="1" max="120" step="1" value="15">
+        <div class="hint" data-t="timeoutHint"></div>
+      </div>
+      <div class="field">
+        <label data-t="itemsLabel"></label>
+        <div class="row2">
+          <input id="zm-live" type="text" value="ZigbeeMap_Live" aria-label="live item" spellcheck="false">
+          <input id="zm-data" type="text" value="ZigbeeMap_Data" aria-label="data item" spellcheck="false">
+        </div>
+        <div class="hint" data-t="itemsHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-label" data-t="pageLabelLabel"></label>
+        <input id="zm-label" type="text">
+        <div class="hint" data-t="pageLabelHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-query" data-t="queryLabel"></label>
+        <textarea id="zm-query" rows="4" spellcheck="false"></textarea>
+        <div class="hint" data-t="queryHint"></div>
+      </div>
+    </details>
+  </section>
+  <section>
+    <h2 data-t="resultTitle"></h2>
+    <div id="zm-summary"></div>
+    <ul id="zm-errors"></ul>
+    <h3 data-t="channelsTitle"></h3>
+    <div id="zm-channels"></div>
+    <h3 data-t="ruleTitle"></h3>
+    <div class="hint" data-t="ruleHint"></div>
+    <textarea id="zm-rule" class="out" readonly spellcheck="false"></textarea>
+    <div class="buttons"><button id="zm-rule-copy" data-t="copy"></button><button id="zm-rule-dl" class="secondary" data-t="download"></button><span class="copied" id="zm-rule-msg"></span></div>
+    <h3 data-t="pageTitle"></h3>
+    <div class="hint" data-t="pageHint"></div>
+    <textarea id="zm-page" class="out" readonly spellcheck="false"></textarea>
+    <div class="buttons"><button id="zm-page-copy" data-t="copy"></button><button id="zm-page-dl" class="secondary" data-t="download"></button><span class="copied" id="zm-page-msg"></span></div>
+    <h3 data-t="stepsTitle"></h3>
+    <ol id="zm-steps"></ol>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var UI = {
+    en: {
+      title: 'Zigbee radio map generator',
+      intro: 'Creates an openHAB floor plan page that shows the live link quality (LQI) of your Zigbee2MQTT devices, and the rule that feeds it. Everything happens in this browser tab; nothing is sent anywhere.',
+      formTitle: 'Your installation',
+      langLabel: 'Language', langHint: 'For this form and for the texts on the generated page.',
+      imageLabel: 'Floor plan image (width × height in pixels)', imageHint: 'Choose the image file to read its size (it stays on your computer), or type width and height.',
+      urlLabel: 'Image URL in openHAB', urlHint: 'Put the image into conf/html/ of openHAB; conf/html/floorplan.png is served as /static/floorplan.png.',
+      devicesLabel: 'Device list',
+      devicesHint: 'Paste the JSON of zigbee2mqtt/bridge/devices, e.g. from: mosquitto_sub -h <broker> -t zigbee2mqtt/bridge/devices -C 1. Or one name per line: name, name;router, name;coordinator.',
+      thingLabel: 'MQTT broker thing UID', thingHint: 'Settings → Things → your broker → the UID under its name.',
+      switchLabel: 'This is a second broker thing used only for the map: switch it on only while live',
+      switchHint: 'Leave this off if the thing is your main broker. The rule never switches a broker that other things use.',
+      advanced: 'Advanced',
+      baseLabel: 'Zigbee2MQTT base topic', baseHint: 'As in the Zigbee2MQTT settings (mqtt.base_topic).',
+      timeoutLabel: 'Live time (minutes)', timeoutHint: 'Live switches itself off after this time.',
+      itemsLabel: 'Item names (live switch, data)', itemsHint: 'The rule creates both items when you press "Run now".',
+      pageLabelLabel: 'Page title', pageLabelHint: 'Empty: "Zigbee radio map" in the chosen language.',
+      queryLabel: 'Devices asked for a fresh value at live start',
+      queryHint: 'One name per line. Filled from the device list (routers with a readable state) until you edit it.',
+      resultTitle: 'Result',
+      summary: function (n, r, e, c) { return n + ' devices: ' + r + ' routers, ' + e + ' end devices, coordinator ' + (c ? 'yes' : 'no'); },
+      channelsTitle: '1. Channels on the broker thing',
+      channels: function (thing, base) {
+        return 'Thing ' + code(thing || 'mqtt:broker:…') + ' → Channels → Add Channel → Publish Trigger, twice. Click "Show advanced" to see the separator.' +
+          '<ol><li>Channel ID ' + code('zbmap') + ', MQTT topic ' + code(base + '/+') + ', separator ' + code('#') + '</li>' +
+          '<li>Channel ID ' + code('zbmap_avail') + ', MQTT topic ' + code(base + '/+/availability') + ', separator ' + code('#') + '</li></ol>';
+      },
+      ruleTitle: '2. Rule', ruleHint: 'Rules → + → Code tab → replace everything with this text → Save → "Run now" once (creates the two items).',
+      pageTitle: '3. Page', pageHint: 'Pages → + → Floor plan → Code tab → replace everything with this text → Save.',
+      copy: 'Copy', download: 'Download', copied: 'copied', copyFailed: 'select the text and copy it by hand',
+      stepsTitle: 'Afterwards',
+      steps: ['Open the page and tap "Live". Markers turn from white to coloured as the devices report.',
+        'Markers without a position are parked in a grid across the image, sorted by name: open the page editor, drag them to their rooms, delete the note label, save.',
+        'A device added later: copy any marker of the same kind in the page editor and type the new device name into "name".',
+        'Optional: exclude the two items from persistence (e.g. !ZigbeeMap_Live and !ZigbeeMap_Data in the persistence configuration).']
+    },
+    de: {
+      title: 'Zigbee-Funkkarte: Generator',
+      intro: 'Erzeugt eine openHAB-Raumplan-Seite, die die Live-Linkqualität (LQI) der Zigbee2MQTT-Geräte zeigt, und die Regel dazu. Alles passiert in diesem Browser-Tab; nichts wird verschickt.',
+      formTitle: 'Deine Installation',
+      langLabel: 'Sprache', langHint: 'Für dieses Formular und für die Texte auf der erzeugten Seite.',
+      imageLabel: 'Raumplan-Bild (Breite × Höhe in Pixeln)', imageHint: 'Bilddatei wählen, um ihre Größe zu lesen (sie bleibt auf dem Rechner), oder Breite und Höhe eintippen.',
+      urlLabel: 'Bild-URL in openHAB', urlHint: 'Das Bild gehört nach conf/html/ von openHAB; conf/html/floorplan.png heißt dann /static/floorplan.png.',
+      devicesLabel: 'Geräteliste',
+      devicesHint: 'Das JSON von zigbee2mqtt/bridge/devices einfügen, z. B. aus: mosquitto_sub -h <broker> -t zigbee2mqtt/bridge/devices -C 1. Oder ein Name pro Zeile: name, name;router, name;coordinator.',
+      thingLabel: 'UID des MQTT-Broker-Things', thingHint: 'Einstellungen → Things → dein Broker → die UID unter dem Namen.',
+      switchLabel: 'Das ist ein zweites Broker-Thing nur für die Karte: nur während Live einschalten',
+      switchHint: 'Aus lassen, wenn es der Haupt-Broker ist. Die Regel schaltet nie einen Broker, den andere Things benutzen.',
+      advanced: 'Erweitert',
+      baseLabel: 'Zigbee2MQTT-Basis-Topic', baseHint: 'Wie in den Zigbee2MQTT-Einstellungen (mqtt.base_topic).',
+      timeoutLabel: 'Live-Dauer (Minuten)', timeoutHint: 'Danach schaltet sich Live selbst aus.',
+      itemsLabel: 'Item-Namen (Live-Schalter, Daten)', itemsHint: 'Die Regel legt beide Items an, wenn du „Jetzt ausführen“ drückst.',
+      pageLabelLabel: 'Seitentitel', pageLabelHint: 'Leer: „Zigbee-Funkkarte“ in der gewählten Sprache.',
+      queryLabel: 'Geräte, die beim Live-Start nach einem frischen Wert gefragt werden',
+      queryHint: 'Ein Name pro Zeile. Wird aus der Geräteliste gefüllt (Router mit lesbarem state), bis du es änderst.',
+      resultTitle: 'Ergebnis',
+      summary: function (n, r, e, c) { return n + ' Geräte: ' + r + ' Router, ' + e + ' Endgeräte, Koordinator ' + (c ? 'ja' : 'nein'); },
+      channelsTitle: '1. Kanäle am Broker-Thing',
+      channels: function (thing, base) {
+        return 'Thing ' + code(thing || 'mqtt:broker:…') + ' → Channels → Add Channel → Publish Trigger, zweimal. „Show advanced“ anklicken, dann erscheint der Separator.' +
+          '<ol><li>Channel-ID ' + code('zbmap') + ', MQTT-Topic ' + code(base + '/+') + ', Separator ' + code('#') + '</li>' +
+          '<li>Channel-ID ' + code('zbmap_avail') + ', MQTT-Topic ' + code(base + '/+/availability') + ', Separator ' + code('#') + '</li></ol>';
+      },
+      ruleTitle: '2. Regel', ruleHint: 'Regeln → + → Code-Tab → alles durch diesen Text ersetzen → Speichern → einmal „Jetzt ausführen“ (legt die zwei Items an).',
+      pageTitle: '3. Seite', pageHint: 'Seiten → + → Raumplan → Code-Tab → alles durch diesen Text ersetzen → Speichern.',
+      copy: 'Kopieren', download: 'Herunterladen', copied: 'kopiert', copyFailed: 'Text markieren und von Hand kopieren',
+      stepsTitle: 'Danach',
+      steps: ['Seite öffnen und „Live“ antippen. Die Marker werden farbig, sobald die Geräte melden.',
+        'Marker ohne Platz stehen als Raster über dem Bild, nach Namen sortiert: im Seiten-Editor in ihre Räume ziehen, den Hinweis löschen, speichern.',
+        'Ein später hinzugefügtes Gerät: im Seiten-Editor einen Marker der gleichen Art kopieren und den neuen Gerätenamen bei „name“ eintragen.',
+        'Optional: die zwei Items von der Persistenz ausnehmen (z. B. !ZigbeeMap_Live und !ZigbeeMap_Data in der Persistenz-Konfiguration).']
+    }
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function code(s) { return '<code>' + esc(s) + '</code>'; }
+
+  var queryEdited = false, last = { errors: [], rule: '', page: '' };
+
+  function lang() { return $('zm-lang').value === 'de' ? 'de' : 'en'; }
+
+  function applyTexts() {
+    var U = UI[lang()];
+    document.documentElement.lang = lang();
+    var els = document.querySelectorAll('[data-t]');
+    for (var i = 0; i < els.length; i++) {
+      var v = U[els[i].getAttribute('data-t')];
+      if (typeof v === 'string') els[i].textContent = v;
+    }
+    $('zm-label').placeholder = ZMGen.TEXTS[lang()].pageLabel;
+  }
+
+  function queryNames() {
+    return $('zm-query').value.split(/\r?\n/).filter(function (l) { return l.trim() !== ''; });
+  }
+
+  function regenerate() {
+    var L = lang(), U = UI[L];
+    var parsed = ZMGen.parseDevices($('zm-devices').value, L);
+    if (!queryEdited) {
+      $('zm-query').value = parsed.devices.filter(function (d) { return d.query; }).map(function (d) { return d.name; }).join('\n');
+    }
+    var opts = { lang: L, label: $('zm-label').value, imageUrl: $('zm-url').value.trim(),
+      imageWidth: $('zm-width').value, imageHeight: $('zm-height').value,
+      liveItem: $('zm-live').value.trim(), dataItem: $('zm-data').value.trim(), thing: $('zm-thing').value.trim(),
+      switchThing: $('zm-switch').checked, baseTopic: $('zm-base').value.trim(), timeoutMin: $('zm-timeout').value };
+    var errors = parsed.errors.concat(ZMGen.validate(opts));
+    var rule = '', page = '';
+    if (!errors.length) {
+      page = ZMGen.generatePage({ lang: L, label: opts.label, imageUrl: opts.imageUrl, imageWidth: Number(opts.imageWidth),
+        imageHeight: Number(opts.imageHeight), liveItem: opts.liveItem, dataItem: opts.dataItem, devices: parsed.devices });
+      rule = ZMGen.generateRule({ mode: 'mqtt', uid: 'zigbee_radio_map', label: '', liveItem: opts.liveItem, dataItem: opts.dataItem,
+        thing: opts.thing, switchThing: opts.switchThing, baseTopic: opts.baseTopic, timeoutMin: Number(opts.timeoutMin),
+        query: queryNames() }, ZMGen.SOURCES);
+    }
+    var count = function (t) { return parsed.devices.filter(function (d) { return d.type === t; }).length; };
+    $('zm-summary').textContent = parsed.devices.length ? U.summary(parsed.devices.length, count('router'), count('enddevice'), count('coordinator') > 0) : '';
+    $('zm-errors').innerHTML = errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
+    $('zm-channels').innerHTML = U.channels(opts.thing, opts.baseTopic || 'zigbee2mqtt');
+    $('zm-steps').innerHTML = U.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('');
+    $('zm-rule').value = rule;
+    $('zm-page').value = page;
+    ['zm-rule-copy', 'zm-rule-dl', 'zm-page-copy', 'zm-page-dl'].forEach(function (id) { $(id).disabled = !!errors.length; });
+    $('zm-rule-msg').textContent = ''; $('zm-page-msg').textContent = '';
+    last = { errors: errors, rule: rule, page: page };
+  }
+
+  function copy(areaId, msgId) {
+    var text = $(areaId).value, U = UI[lang()];
+    var done = function () { $(msgId).textContent = U.copied; };
+    var fallback = function () {
+      var a = $(areaId);
+      a.focus(); a.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      $(msgId).textContent = ok ? U.copied : U.copyFailed;
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+
+  function download(areaId, name) {
+    var url = URL.createObjectURL(new Blob([$(areaId).value], { type: 'text/yaml;charset=utf-8' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function readImage() {
+    var f = $('zm-image').files && $('zm-image').files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function () {
+      $('zm-width').value = img.naturalWidth; $('zm-height').value = img.naturalHeight;
+      URL.revokeObjectURL(url); regenerate();
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); };
+    img.src = url;
+  }
+
+  var FIELDS = { lang: 'zm-lang', url: 'zm-url', devices: 'zm-devices', thing: 'zm-thing', width: 'zm-width', height: 'zm-height',
+    base: 'zm-base', timeout: 'zm-timeout', liveItem: 'zm-live', dataItem: 'zm-data', label: 'zm-label', query: 'zm-query' };
+
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'zm-query') queryEdited = true;
+    if (e.target && e.target.id === 'zm-lang') applyTexts();
+    regenerate();
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'zm-image') { readImage(); return; }
+    if (e.target && e.target.id === 'zm-lang') applyTexts();
+    regenerate();
+  });
+  $('zm-rule-copy').addEventListener('click', function () { copy('zm-rule', 'zm-rule-msg'); });
+  $('zm-page-copy').addEventListener('click', function () { copy('zm-page', 'zm-page-msg'); });
+  $('zm-rule-dl').addEventListener('click', function () { download('zm-rule', 'zigbee_radio_map_rule.yaml'); });
+  $('zm-page-dl').addEventListener('click', function () { download('zm-page', 'zigbee_radio_map_page.yaml'); });
+
+  // for tests: set({ lang, url, devices, thing, switchThing, width, height, base, timeout, liveItem, dataItem, label, query })
+  window.ZMApp = {
+    state: function () { return { errors: last.errors.slice(), rule: last.rule, page: last.page }; },
+    set: function (values) {
+      Object.keys(values).forEach(function (k) {
+        if (k === 'switchThing') $('zm-switch').checked = !!values[k];
+        else if (FIELDS[k]) $(FIELDS[k]).value = values[k];
+        if (k === 'query') queryEdited = true;
+      });
+      applyTexts();
+      regenerate();
+      return this.state();
+    }
+  };
+
+  applyTexts();
+  regenerate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "zigbee-radio-map-tests",
+  "private": true,
+  "description": "Test-only dependencies: the expression evaluator of openHAB MainUI 5.1.4 (jse-eval + jsep plugins), js-yaml, dayjs, framework7-icons for the probe image",
+  "devDependencies": {
+    "jse-eval": "1.5.2",
+    "@jsep-plugin/arrow": "1.0.5",
+    "@jsep-plugin/object": "1.2.1",
+    "@jsep-plugin/regex": "1.0.3",
+    "@jsep-plugin/template": "1.0.4",
+    "dayjs": "1.11.18",
+    "js-yaml": "4.1.0",
+    "framework7-icons": "5.0.5"
+  }
+}

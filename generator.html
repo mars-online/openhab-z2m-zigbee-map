@@ -1,0 +1,719 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: EPL-2.0 -->
+<!-- Zigbee radio map generator: built by build.js from src/generator.src.html, src/gen.js and the rule sources.
+     A local file: it works offline and sends nothing anywhere. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zigbee radio map generator</title>
+<style>
+:root { color-scheme: light dark; --bg: #f6f7f9; --card: #fff; --text: #1d2125; --muted: #5d6670; --line: #d5dae0;
+  --accent: #1565c0; --err-bg: #fdecea; --err: #a3271c; --code: #eef1f4; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181b; --card: #1f2327; --text: #e4e7ea; --muted: #9aa4ae; --line: #3a4148; --accent: #64a7f0;
+    --err-bg: #3d1f1c; --err: #ffb4a9; --code: #2a2f34; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { padding: 16px; max-width: 1280px; margin: 0 auto; }
+header h1 { margin: 0 0 4px; font-size: 22px; }
+header p { margin: 0; color: var(--muted); }
+main { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 0 16px 24px; max-width: 1280px; margin: 0 auto; }
+@media (min-width: 900px) { main { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+h3 { font-size: 15px; margin: 18px 0 6px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-weight: 600; margin-bottom: 4px; }
+.field label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 600; }
+.hint { color: var(--muted); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+input[type=text], input[type=number], select, textarea { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--card); color: var(--text); font: inherit; }
+input[type=file] { max-width: 100%; }
+textarea { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 600; margin-bottom: 10px; }
+code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-size: 13px; overflow-wrap: anywhere; }
+#zm-summary { font-weight: 600; }
+#zm-errors { margin: 8px 0; padding: 0; list-style: none; }
+#zm-errors li { background: var(--err-bg); color: var(--err); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; }
+.buttons { display: flex; gap: 8px; margin: 6px 0 4px; flex-wrap: wrap; }
+button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+button.secondary { background: transparent; color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
+.out { height: 180px; }
+ol { padding-left: 20px; margin: 6px 0; }
+ol li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.copied { color: var(--muted); font-size: 13px; align-self: center; }
+</style>
+<script>
+// SPDX-License-Identifier: EPL-2.0
+// ===== Zigbee radio map: generator functions =====
+// Pure functions without dependencies, used by generator.html (global ZMGen), by build.js and by the tests (module).
+// parseDevices: Zigbee2MQTT device list -> devices; validate: form values -> errors;
+// generatePage / generateRule: YAML text for the Code tab of a new floor plan page / a new rule.
+(function (root) {
+  'use strict';
+
+  var TEXTS = {
+    en: {
+      pageLabel: 'Zigbee radio map',
+      liveOn: ['● Live · ', ' min left'],
+      liveOff: '○ Live off – tap to start',
+      justNow: 'just now', minAgo: ['', ' min ago'], hAgo: ['', ' h ago'], dAgo: ['', ' days ago'],
+      noValue: 'no value yet', offline: 'offline',
+      legendLqi: 'LQI  ≤30 · 75 · ≥120',
+      legendSymbols: 'white = no value yet · grey = offline · pale = older than this live session · ⟳ router · ◉ end device',
+      coordinator: 'Coordinator',
+      parkedNote: 'New devices are parked in a grid across the image, sorted by name. Drag them to their place in edit mode, then delete this note.'
+    },
+    de: {
+      pageLabel: 'Zigbee-Funkkarte',
+      liveOn: ['● Live · noch ', ' min'],
+      liveOff: '○ Live aus – antippen',
+      justNow: 'gerade eben', minAgo: ['vor ', ' min'], hAgo: ['vor ', ' h'], dAgo: ['vor ', ' Tagen'],
+      noValue: 'noch kein Wert', offline: 'offline',
+      legendLqi: 'LQI  ≤30 · 75 · ≥120',
+      legendSymbols: 'weiß = noch kein Wert · grau = offline · blass = älter als diese Live-Runde · ⟳ Router · ◉ Endgerät',
+      coordinator: 'Koordinator',
+      parkedNote: 'Neue Geräte stehen als Raster über dem Bild, nach Namen sortiert. Im Bearbeiten-Modus an ihren Platz ziehen, dann diesen Hinweis löschen.'
+    }
+  };
+
+  var ERRORS = {
+    en: {
+      empty: 'The device list is empty.',
+      html: 'The device list looks like HTML. Paste the JSON of zigbee2mqtt/bridge/devices or one device name per line.',
+      badJson: 'The device list is not valid JSON (is it complete?).',
+      notArray: 'This JSON is not a device list. Use the message of the topic zigbee2mqtt/bridge/devices (it starts with "[").',
+      noNames: 'No entry of the JSON list has a "friendly_name".',
+      duplicate: 'Device name used twice: ',
+      typeWord: 'Unknown device type (use router, coordinator or enddevice) in line: ',
+      twoCoordinators: 'More than one coordinator in the list.',
+      itemName: 'Item names may contain only letters, digits and _, and must not start with a digit: ',
+      sameItems: 'The live item and the data item need different names.',
+      thing: 'The broker thing UID looks like mqtt:broker:mybroker (at least three parts separated by ":").',
+      baseTopic: 'The base topic must not be empty and must not contain # or +, or start or end with /.',
+      imageSize: 'Image width and height must be whole numbers of at least 100.',
+      timeout: 'The live time must be a whole number of minutes between 1 and 120.',
+      imageUrl: 'The image URL is empty.'
+    },
+    de: {
+      empty: 'Die Geräteliste ist leer.',
+      html: 'Die Geräteliste sieht nach HTML aus. Das JSON von zigbee2mqtt/bridge/devices oder einen Gerätenamen pro Zeile einfügen.',
+      badJson: 'Die Geräteliste ist kein gültiges JSON (ist sie vollständig?).',
+      notArray: 'Dieses JSON ist keine Geräteliste. Die Nachricht des Topics zigbee2mqtt/bridge/devices verwenden (sie beginnt mit "[").',
+      noNames: 'Kein Eintrag der JSON-Liste hat einen "friendly_name".',
+      duplicate: 'Gerätename doppelt: ',
+      typeWord: 'Unbekannter Gerätetyp (router, coordinator oder enddevice) in Zeile: ',
+      twoCoordinators: 'Mehr als ein Koordinator in der Liste.',
+      itemName: 'Item-Namen dürfen nur Buchstaben, Ziffern und _ enthalten und nicht mit einer Ziffer beginnen: ',
+      sameItems: 'Live-Item und Daten-Item brauchen verschiedene Namen.',
+      thing: 'Die UID des Broker-Things sieht aus wie mqtt:broker:meinbroker (mindestens drei Teile, getrennt durch ":").',
+      baseTopic: 'Das Basis-Topic darf nicht leer sein, kein # oder + enthalten und nicht mit / beginnen oder enden.',
+      imageSize: 'Bildbreite und -höhe müssen ganze Zahlen ab 100 sein.',
+      timeout: 'Die Live-Dauer muss eine ganze Zahl von Minuten zwischen 1 und 120 sein.',
+      imageUrl: 'Die Bild-URL ist leer.'
+    }
+  };
+
+  function err(lang) { return ERRORS[lang] || ERRORS.en; }
+  function texts(lang) { return TEXTS[lang] || TEXTS.en; }
+
+  // coordinator first, then by name, case-insensitive (plain code unit order: the same in every browser)
+  function sortDevices(list) {
+    var rank = function (d) { return d.type === 'coordinator' ? 0 : 1; };
+    return list.slice().sort(function (a, b) {
+      if (rank(a) !== rank(b)) return rank(a) - rank(b);
+      var x = a.name.toLowerCase(), y = b.name.toLowerCase();
+      return x < y ? -1 : x > y ? 1 : (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    });
+  }
+
+  // a router whose exposes (searched through nested features) contain a settable/gettable "state" (access bit 4)
+  function hasGettableState(exposes) {
+    if (!exposes || typeof exposes.length !== 'number') return false;
+    for (var i = 0; i < exposes.length; i++) {
+      var e = exposes[i];
+      if (!e || typeof e !== 'object') continue;
+      if (e.property === 'state' && (Number(e.access) & 4)) return true;
+      if (hasGettableState(e.features)) return true;
+    }
+    return false;
+  }
+
+  function parseDevices(text, lang) {
+    var E = err(lang), out = [], errors = [];
+    var t = String(text === undefined || text === null ? '' : text).trim();
+    if (!t) return { devices: [], errors: [E.empty] };
+    if (t.charAt(0) === '<') return { devices: [], errors: [E.html] };
+    if (t.charAt(0) === '[' || t.charAt(0) === '{' || t.charAt(0) === '"' || t === 'null') {
+      var j;
+      try { j = JSON.parse(t); } catch (e) { return { devices: [], errors: [E.badJson] }; }
+      if (!Array.isArray(j)) return { devices: [], errors: [E.notArray] };
+      var named = 0;
+      for (var i = 0; i < j.length; i++) {
+        var d = j[i];
+        if (!d || typeof d !== 'object' || typeof d.friendly_name !== 'string' || !d.friendly_name) continue;
+        named++;
+        if (d.disabled === true) continue;
+        var type = d.type === 'Coordinator' ? 'coordinator' : d.type === 'Router' ? 'router' : 'enddevice';
+        out.push({ name: d.friendly_name, type: type,
+          query: type === 'router' && !!d.definition && hasGettableState(d.definition.exposes) });
+      }
+      if (!named) errors.push(E.noNames);
+    } else {
+      var lines = t.split(/\r?\n/);
+      for (var k = 0; k < lines.length; k++) {
+        var line = lines[k].trim();
+        if (!line || line.charAt(0) === '#') continue;
+        var semi = line.lastIndexOf(';'), name = line, word = 'enddevice';
+        if (semi >= 0) {
+          name = line.substring(0, semi).trim();
+          word = line.substring(semi + 1).trim().toLowerCase().replace(/[\s_-]/g, '');
+          if (word !== 'router' && word !== 'coordinator' && word !== 'enddevice') { errors.push(E.typeWord + line); continue; }
+        }
+        if (!name) { errors.push(E.typeWord + line); continue; }
+        out.push({ name: name, type: word, query: false });
+      }
+    }
+    var seen = {}, coordinators = 0;
+    for (var n = 0; n < out.length; n++) {
+      if (Object.prototype.hasOwnProperty.call(seen, out[n].name)) errors.push(E.duplicate + out[n].name);
+      seen[out[n].name] = true;
+      if (out[n].type === 'coordinator') coordinators++;
+    }
+    if (coordinators > 1) errors.push(E.twoCoordinators);
+    if (!errors.length && !out.length) errors.push(E.empty);
+    if (errors.length) return { devices: [], errors: errors };
+    return { devices: sortDevices(out), errors: [] };
+  }
+
+  function isWhole(v, min, max) {
+    var n = Number(v);
+    return String(v).trim() !== '' && Math.floor(n) === n && n >= min && n <= max;
+  }
+
+  // opts: { lang, liveItem, dataItem, thing, baseTopic, imageWidth, imageHeight, timeoutMin, imageUrl }
+  function validate(opts) {
+    var E = err(opts.lang), errors = [], itemRe = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    [opts.liveItem, opts.dataItem].forEach(function (n) {
+      if (!itemRe.test(String(n === undefined ? '' : n))) errors.push(E.itemName + JSON.stringify(String(n === undefined ? '' : n)));
+    });
+    if (itemRe.test(String(opts.liveItem)) && opts.liveItem === opts.dataItem) errors.push(E.sameItems);
+    if (!/^[A-Za-z0-9_-]+(:[A-Za-z0-9_-]+){2,}$/.test(String(opts.thing || ''))) errors.push(E.thing);
+    var b = String(opts.baseTopic === undefined ? '' : opts.baseTopic);
+    if (!b || /[#+]/.test(b) || b.charAt(0) === '/' || b.charAt(b.length - 1) === '/') errors.push(E.baseTopic);
+    if (!isWhole(opts.imageWidth, 100, 1e6) || !isWhole(opts.imageHeight, 100, 1e6)) errors.push(E.imageSize);
+    if (!isWhole(opts.timeoutMin, 1, 120)) errors.push(E.timeout);
+    if (!String(opts.imageUrl === undefined ? '' : opts.imageUrl).trim()) errors.push(E.imageUrl);
+    return errors;
+  }
+
+  function round1(v) { return String(Math.round(v * 10) / 10); }
+
+  // a grid over the image, filled row by row from the top; coords "y,x" with y measured from the bottom
+  function layoutParked(n, width, height) {
+    var out = [];
+    if (!(n > 0)) return out;
+    var cols = Math.max(1, Math.ceil(Math.sqrt(n * width / height))), cell = width / cols;
+    for (var i = 0; i < n; i++) {
+      out.push(round1(height - (Math.floor(i / cols) + 0.5) * cell) + ',' + round1((i % cols + 0.5) * cell));
+    }
+    return out;
+  }
+
+  // ---- page ----
+  var ICON_ROUTER = 'f7:arrow_2_circlepath_circle_fill', ICON_END = 'f7:largecircle_fill_circle';
+  var WHITE = '#ffffff', GREY = '#9e9e9e', ORANGE = '#ef6c00';
+  var SHADOW = 'drop-shadow(0 0 1.5px rgba(0,0,0,0.85))';
+  var BLINK_S = 0.9, BLINK_RECENT_S = 15;
+  var STYLESHEET = '@keyframes zmA { 0% { transform: scale(1); } 30% { transform: scale(2); filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 2px #000); } 100% { transform: scale(1); } }\n' +
+    '@keyframes zmB { 0% { transform: scale(1); } 30% { transform: scale(2); filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 2px #000); } 100% { transform: scale(1); } }';
+  var HUE = 'Math.round(x.q <= 75 ? Math.max(0, x.q - 30) / 45 * 60 : 60 + Math.min(45, x.q - 75) / 45 * 60)';
+  var HAS_Q = '(x && x.q !== undefined)';
+
+  // single-quoted JS string literal for an expression
+  function q(s) { return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'"; }
+
+  // the JSON of the data item, parsed defensively: '-' while loading, NULL/UNDEF before the first write,
+  // a truncated value: anything that is not "{...}" gives an empty object (an evaluation error would not throw)
+  function dataExpr(dataItem) {
+    return "(s => (s && s[0] === '{' && s[s.length - 1] === '}') ? JSON.parse(s) : { d: {} })(items." + dataItem + '.state)';
+  }
+
+  // expression with D = data and x = the entry of this marker's device (config.name) or undefined
+  function devExpr(dataItem, body) {
+    return '=(D => (x => ' + body + ')(D.d ? D.d[config.name] : undefined))(' + dataExpr(dataItem) + ')';
+  }
+
+  function ageExpr(T) {
+    var p = function (pair, v) { return q(pair[0]) + ' + ' + v + ' + ' + q(pair[1]); };
+    return '(m => m < 1 ? ' + q(T.justNow) + ' : m < 60 ? ' + p(T.minAgo, 'm') + ' : m < 2880 ? ' + p(T.hAgo, 'Math.round(m / 60)') +
+      ' : ' + p(T.dAgo, 'Math.round(m / 1440)') + ')(Math.round((dayjs().unix() - x.t) / 60))';
+  }
+
+  function marker(config) { return { component: 'oh-plan-marker', config: config, slots: { 'default': [] } }; }
+
+  function deviceMarker(d, coords, opts, T) {
+    if (d.type === 'coordinator') {
+      return marker({ coords: coords, name: T.coordinator, icon: ICON_ROUTER, iconSize: 26, iconRotation: 0,
+        iconStyle: { color: ORANGE, filter: SHADOW }, tooltip: T.coordinator });
+    }
+    var di = opts.dataItem;
+    return marker({
+      coords: coords, name: d.name, icon: d.type === 'router' ? ICON_ROUTER : ICON_END, iconSize: 20, iconRotation: 0,
+      iconStyle: {
+        color: devExpr(di, '!' + HAS_Q + " ? '" + WHITE + "' : (x.a === 0 ? '" + GREY + "' : 'hsl(' + " + HUE + " + ', 85%, 42%)')"),
+        opacity: devExpr(di, '(' + HAS_Q + ' && D.s0 && x.t < D.s0) ? 0.4 : 1'),
+        animation: devExpr(di, '(D.u === config.name && ' + HAS_Q + ' && dayjs().unix() - x.t <= ' + BLINK_RECENT_S + ') ? ' +
+          "((D.n % 2) ? 'zmA' : 'zmB') + ' " + BLINK_S + "s ease-out 1' : 'none'"),
+        filter: SHADOW
+      },
+      tooltip: devExpr(di, 'config.name + (' + HAS_Q + " ? ' · LQI ' + x.q + ' · ' + " + ageExpr(T) + ' : ' + q(' · ' + T.noValue) +
+        ') + ((x && x.a === 0) ? ' + q(' · ' + T.offline) + " : '')")
+    });
+  }
+
+  function label(name, coords, text, style, extra) {
+    // MainUI renders the label as a block div inside an iconSize-wide icon: max-content lets the background follow the text
+    var base = { width: 'max-content', padding: '4px 10px', borderRadius: '10px', fontSize: '13px', lineHeight: '1.3', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' };
+    var k, st = {}, cfg = { coords: coords, name: name, useTooltipAsLabel: true, tooltip: text, tooltipStyle: st, iconSize: 40 };
+    for (k in base) st[k] = base[k];
+    for (k in style) st[k] = style[k];
+    for (k in (extra || {})) cfg[k] = extra[k];
+    return marker(cfg);
+  }
+
+  function labelMarkers(opts, T, parked) {
+    var w = Number(opts.imageWidth), h = Number(opts.imageHeight);
+    var at = function (p) { return Math.round(h * p) + ',' + Math.round(w * 0.04); };
+    var hide = +(Math.log(700 / w) / Math.LN2).toFixed(1);
+    if (hide === 0) hide = 0;                                   // no "-0"
+    var on = 'items.' + opts.liveItem + ".state === 'ON'";
+    var left = 'Math.max(0, Math.ceil(((D => D.e || 0)(' + dataExpr(opts.dataItem) + ') - dayjs().unix()) / 60))';
+    var plain = { background: 'rgba(255,255,255,0.9)', color: '#222' };
+    var out = [
+      label('Live', at(0.04), '=(' + on + ') ? ' + q(T.liveOn[0]) + ' + ' + left + ' + ' + q(T.liveOn[1]) + ' : ' + q(T.liveOff),
+        { background: '=(' + on + ") ? '#2e7d32' : '#616161'", color: 'white', padding: '6px 14px', borderRadius: '16px',
+          fontWeight: 'bold', fontSize: '15px', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' },
+        { item: opts.liveItem, action: 'toggle', actionItem: opts.liveItem, actionCommand: 'ON', actionCommandAlt: 'OFF' }),
+      label('Legend LQI', at(0.11), T.legendLqi,
+        { background: 'linear-gradient(90deg, hsl(0,85%,42%) 0%, hsl(60,85%,42%) 50%, hsl(120,85%,42%) 100%)',
+          color: 'white', textShadow: '0 0 3px #000', fontWeight: 'bold' }),
+      label('Legend symbols', at(0.18), T.legendSymbols, plain, { zoomVisibilityMin: hide })
+    ];
+    if (parked) out.push(label('Parked note', at(0.25), T.parkedNote, plain, { zoomVisibilityMin: hide }));
+    return out;
+  }
+
+  // ---- tiny YAML writer: block mappings and sequences, every string as a JSON (= YAML double-quoted) scalar ----
+  // JSON text that is also safe inside YAML: escape the characters YAML treats as line breaks or as non-printable
+  function jsonSafe(v, indent) {
+    return JSON.stringify(v, null, indent).replace(/[\u007f-\u009f\u2028\u2029\ufeff]/g, function (c) {
+      return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4);
+    });
+  }
+  function yamlScalar(v) {
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    return jsonSafe(String(v));
+  }
+  function yamlLines(v, indent, out) {
+    var pad = new Array(indent + 1).join(' ');
+    if (Array.isArray(v)) {
+      v.forEach(function (x) {
+        var sub = [];
+        yamlLines(x, indent + 2, sub);
+        out.push(pad + '- ' + sub[0].substring(indent + 2));
+        for (var i = 1; i < sub.length; i++) out.push(sub[i]);
+      });
+      return;
+    }
+    Object.keys(v).forEach(function (k) {
+      var x = v[k];
+      if (x === undefined) return;
+      if (Array.isArray(x) && !x.length) out.push(pad + k + ': []');
+      else if (x && typeof x === 'object' && !Object.keys(x).length) out.push(pad + k + ': {}');
+      else if (x && typeof x === 'object') { out.push(pad + k + ':'); yamlLines(x, Array.isArray(x) ? indent : indent + 2, out); }
+      else out.push(pad + k + ': ' + yamlScalar(x));
+    });
+  }
+  function toYaml(v) { var out = []; yamlLines(v, 0, out); return out.join('\n') + '\n'; }
+
+  // opts: { lang, label, imageUrl, imageWidth, imageHeight, liveItem, dataItem, devices, positions }
+  function generatePage(opts) {
+    var T = texts(opts.lang), pos = opts.positions || {}, devices = opts.devices || [];
+    var w = Number(opts.imageWidth), h = Number(opts.imageHeight);
+    var missing = devices.filter(function (d) { return !Object.prototype.hasOwnProperty.call(pos, d.name); });
+    var grid = layoutParked(missing.length, w, h), parkedAt = {};
+    missing.forEach(function (d, i) { parkedAt[d.name] = grid[i]; });
+    var markers = devices.map(function (d) {
+      return deviceMarker(d, Object.prototype.hasOwnProperty.call(pos, d.name) ? String(pos[d.name]) : parkedAt[d.name], opts, T);
+    }).concat(labelMarkers(opts, T, missing.length > 0));
+    var page = {
+      config: { label: String(opts.label || '').trim() ? String(opts.label) : T.pageLabel, imageUrl: String(opts.imageUrl),
+        imageWidth: w, imageHeight: h, backgroundColor: 'blackwhite', tooltipColor: 'white', noZoomAnimation: true,
+        sidebar: true, stylesheet: STYLESHEET },
+      markers: markers
+    };
+    return '# SPDX-License-Identifier: EPL-2.0\n# Zigbee radio map: floor plan page, generated by zigbee-radio-map (generator.html).\n' +
+      '# Pages -> + -> Floor plan -> Code tab: replace everything with this text, then save.\n' +
+      '# Data: items ' + opts.liveItem + ' and ' + opts.dataItem + ', written by the rule of the same generator.\n' +
+      toYaml(page);
+  }
+
+  // ---- rule ----
+  var RULE_HEADER = '// SPDX-License-Identifier: EPL-2.0\n// Zigbee radio map (zigbee-radio-map, generator.html): config, transport, core.\n';
+  // opts: { mode: 'mqtt'|'demo', uid, label, liveItem, dataItem, thing, switchThing, baseTopic, timeoutMin, query, demo }
+  // sources: { core, mqtt, demo } (file contents of src/rule_core.js, src/transport_mqtt.js, src/transport_demo.js)
+  function generateRule(opts, sources) {
+    var demo = opts.mode === 'demo';
+    var zm = { liveItem: opts.liveItem, dataItem: opts.dataItem };
+    if (!demo) { zm.thing = opts.thing; zm.switchThing = !!opts.switchThing; }
+    zm.baseTopic = opts.baseTopic;
+    zm.timeoutMs = Math.round(Number(opts.timeoutMin) * 60000);
+    zm.writeMs = 1000;
+    if (demo) zm.demo = opts.demo; else zm.query = (opts.query || []).slice();
+    var script = RULE_HEADER + 'var ZM = ' + jsonSafe(zm, 2) + ';\n' + (demo ? sources.demo : sources.mqtt) + '\n' + sources.core;
+    var triggers = [['core.ItemCommandTrigger', { itemName: opts.liveItem }]];
+    if (!demo) {
+      triggers.push(['core.ChannelEventTrigger', { channelUID: opts.thing + ':zbmap' }]);
+      triggers.push(['core.ChannelEventTrigger', { channelUID: opts.thing + ':zbmap_avail' }]);
+    }
+    triggers.push(['core.SystemStartlevelTrigger', { startlevel: 100 }]);
+    var min = Math.round(Number(opts.timeoutMin));
+    var description = demo
+      ? 'Demo of the Zigbee radio map: while ' + opts.liveItem + ' is ON (' + min + ' min), simulated link quality values of invented ' +
+        'devices are written as JSON to ' + opts.dataItem + '. No MQTT needed. Press "Run now" once to create the two items.'
+      : 'While ' + opts.liveItem + ' is ON (' + min + ' min), the link quality of all Zigbee2MQTT devices is written as JSON to ' +
+        opts.dataItem + ' (at most once per second). Messages: channels zbmap and zbmap_avail of ' + opts.thing +
+        '. Press "Run now" once to create the two items.';
+    var y = ['uid: ' + yamlScalar(opts.uid),
+      'label: ' + yamlScalar(String(opts.label || '').trim() ? opts.label : 'Zigbee radio map: live link quality'),
+      'description: ' + yamlScalar(description), 'configuration: {}', 'triggers:'];
+    triggers.forEach(function (t, i) {
+      y.push('  - id: "' + (i + 1) + '"', '    configuration:');
+      Object.keys(t[1]).forEach(function (k) { y.push('      ' + k + ': ' + yamlScalar(t[1][k])); });
+      y.push('    type: ' + t[0]);
+    });
+    y.push('conditions: []', 'actions:', '  - id: "script"', '    configuration:', '      type: application/javascript', '      script: |');
+    script.replace(/\n$/, '').split('\n').forEach(function (line) { y.push(line ? '        ' + line : ''); });
+    y.push('    type: script.ScriptAction');
+    return '# SPDX-License-Identifier: EPL-2.0\n# Zigbee radio map: rule, generated by zigbee-radio-map (generator.html).\n' +
+      '# Rules -> + -> Code tab: replace everything with this text, save, then press "Run now" once.\n' + y.join('\n') + '\n';
+  }
+
+  // demo/devices.json entries carry { demo: { q, mode } } next to the Zigbee2MQTT fields
+  function demoDevices(list) {
+    return list.filter(function (d) { return d && d.demo; }).map(function (d) {
+      return { name: d.friendly_name, router: d.type === 'Router', q: d.demo.q === undefined ? 0 : d.demo.q, mode: d.demo.mode };
+    });
+  }
+
+  var ZMGen = { TEXTS: TEXTS, ERRORS: ERRORS, parseDevices: parseDevices, validate: validate, layoutParked: layoutParked,
+    generatePage: generatePage, generateRule: generateRule, RULE_HEADER: RULE_HEADER, demoDevices: demoDevices, toYaml: toYaml };
+  if (typeof module !== 'undefined' && module.exports) module.exports = ZMGen;
+  else root.ZMGen = ZMGen;
+})(this);
+
+ZMGen.SOURCES = {"core":"// SPDX-License-Identifier: EPL-2.0\n// ===== Zigbee radio map: rule core =====\n// Live link quality (LQI) of Zigbee2MQTT devices for an openHAB floor plan page.\n// The generator puts \"var ZM = {...};\" and one transport (MQTT or demo) above this file.\n// Triggers: command on ZM.liveItem, channel events \"<topic>#<value>\", system start level 100.\n// Data item content: {\"u\":last device,\"n\":counter,\"s0\":session start,\"e\":live end,\"d\":{name:{\"q\":lqi,\"t\":epoch s,\"a\":1|0}}}\n// Values are always collected in memory; the data item is written only while live is ON, at most once per ZM.writeMs.\n\nfunction zmNow() { return Math.floor(Date.now() / 1000); }\n\nfunction zmState() {\n  var s = cache.private.get('zmState');\n  if (!s) {\n    s = { u: '', n: 0, s0: 0, e: 0, d: {} };\n    cache.private.put('zmState', s);\n  }\n  return s;\n}\n\nfunction zmCancel(key) {\n  var id = cache.private.get(key);\n  if (id !== null && id !== undefined) clearTimeout(id);\n  cache.private.remove(key);\n}\n\nfunction zmFlush() {\n  cache.private.put('zmLastWrite', Date.now());\n  var it = items.getItem(ZM.dataItem, true);\n  if (it) it.postUpdate(JSON.stringify(zmState()));\n}\n\n// Live is ON while the session end (e) is set. force: write now, regardless of live and of the write limit.\nfunction zmWrite(force) {\n  if (force) { zmCancel('zmWriteTimer'); zmFlush(); return; }\n  if (!(zmState().e > 0)) return;\n  if (cache.private.get('zmWriteTimer') !== null) return;      // a trailing write is already planned\n  var last = cache.private.get('zmLastWrite') || 0;\n  var wait = last + ZM.writeMs - Date.now();\n  if (wait <= 0) { zmFlush(); return; }\n  cache.private.put('zmWriteTimer', setTimeout(function () {\n    cache.private.remove('zmWriteTimer');\n    if (zmState().e > 0) zmFlush();\n  }, wait));\n}\n\nfunction zmLiveStart() {\n  var s = zmState();\n  s.s0 = zmNow();\n  s.e = s.s0 + Math.round(ZM.timeoutMs / 1000);\n  zmCancel('zmTimer');\n  cache.private.put('zmTimer', setTimeout(function () {\n    cache.private.remove('zmTimer');\n    var it = items.getItem(ZM.liveItem, true);\n    if (it) it.sendCommand('OFF');\n  }, ZM.timeoutMs));\n  zmTransportStart();\n  zmWrite(true);\n}\n\nfunction zmLiveStop() {\n  zmCancel('zmTimer');\n  zmCancel('zmWriteTimer');\n  zmTransportStop();\n  zmState().e = 0;\n  zmWrite(true);\n}\n\n// \"<base>/<name>#{json with linkquality}\", \"<base>/<name>/linkquality#87\", \"<base>/<name>/availability#online\"\nfunction zmMessage(payload) {\n  var p = String(payload);\n  var hash = p.indexOf('#');\n  if (hash < 0) return;\n  var topic = p.substring(0, hash), value = p.substring(hash + 1);\n  var base = ZM.baseTopic + '/';\n  if (topic.indexOf(base) !== 0) return;\n  var rest = topic.substring(base.length);\n  if (rest === '' || rest.indexOf('bridge/') === 0) return;\n  var s = zmState(), name, q, j;\n  if (/\\/availability$/.test(rest)) {\n    name = rest.substring(0, rest.length - '/availability'.length);\n    var v = value.trim();\n    try { j = JSON.parse(v); if (j && typeof j === 'object') v = String(j.state); } catch (e) { /* plain text */ }\n    if (!name || (v !== 'online' && v !== 'offline')) return;\n    (s.d[name] || (s.d[name] = {})).a = v === 'online' ? 1 : 0;\n  } else {\n    if (/\\/linkquality$/.test(rest)) {\n      name = rest.substring(0, rest.length - '/linkquality'.length);\n      if (!/^\\s*\\d+\\s*$/.test(value)) return;\n      q = parseInt(value, 10);\n    } else {\n      name = rest;\n      try { j = JSON.parse(value); } catch (e) { return; }\n      if (!j || typeof j !== 'object' || typeof j.linkquality !== 'number' || isNaN(j.linkquality)) return;\n      q = Math.round(j.linkquality);\n    }\n    if (!name) return;\n    var dev = s.d[name] || (s.d[name] = {});\n    dev.q = q;\n    dev.t = zmNow();\n    s.u = name;\n    s.n = (s.n + 1) % 1000000;\n  }\n  zmWrite(false);\n}\n\nfunction zmSystemStart() {\n  if (!items.getItem(ZM.liveItem, true)) {\n    items.addItem({ type: 'Switch', name: ZM.liveItem, label: 'Zigbee radio map: live', category: 'network' });\n  }\n  if (!items.getItem(ZM.dataItem, true)) {\n    items.addItem({ type: 'String', name: ZM.dataItem, label: 'Zigbee radio map: data (JSON)', category: 'network' });\n  }\n  var it = items.getItem(ZM.liveItem, true);\n  var on = !!it && String(it.state) === 'ON';\n  if (on && cache.private.get('zmTimer') !== null) return;     // a live session of this rule is running\n  if (on) { it.sendCommand('OFF'); return; }\n  zmTransportStop();\n  if (it && String(it.state) !== 'OFF') it.postUpdate('OFF');\n}\n\n// Normalise the (converted or raw Java) event object.\nfunction zmEvent(e) {\n  if (!e) return { kind: 'start' };\n  if (typeof e.getEvent === 'function') return { kind: 'channel', payload: String(e.getEvent()) };\n  if (typeof e.getItemName === 'function' && typeof e.getItemCommand === 'function') {\n    return { kind: 'command', item: String(e.getItemName()), value: String(e.getItemCommand()) };\n  }\n  if (e.eventType === 'triggered') return { kind: 'channel', payload: String(e.receivedEvent) };\n  if (e.eventType === 'command') return { kind: 'command', item: String(e.itemName), value: String(e.receivedCommand) };\n  return { kind: 'start' };\n}\n\n(function () {\n  var ev = zmEvent(typeof event === 'undefined' ? null : event);\n  if (ev.kind === 'channel') {\n    zmMessage(ev.payload);\n  } else if (ev.kind === 'command') {\n    if (ev.item !== ZM.liveItem) return;\n    if (ev.value === 'ON') zmLiveStart(); else zmLiveStop();\n  } else {\n    zmSystemStart();\n  }\n})();\n","mqtt":"// SPDX-License-Identifier: EPL-2.0\n// ===== Zigbee radio map: MQTT transport =====\n// Messages arrive through the two publish trigger channels of the broker thing ZM.thing.\n// If ZM.switchThing is true, that thing is enabled only while live is ON (a second broker thing used only for the\n// map). Guard: a thing that other things use as their bridge (the main broker) is never switched.\n// At live start the devices in ZM.query get \"<base>/<name>/get {\"state\":\"\"}\"; the answer brings a fresh linkquality.\n\nfunction zmThing() {\n  return things.getThing(ZM.thing, true);\n}\n\n// UID of the first other thing that uses ZM.thing as its bridge, or ''\nfunction zmBridgeChild() {\n  var all = things.getThings();\n  for (var i = 0; i < all.length; i++) {\n    if (String(all[i].bridgeUID) === ZM.thing && String(all[i].uid) !== ZM.thing) return String(all[i].uid);\n  }\n  return '';\n}\n\nfunction zmQuery() {\n  var mqtt = actions.get('mqtt', ZM.thing);\n  ZM.query.forEach(function (name) {\n    mqtt.publishMQTT(ZM.baseTopic + '/' + name + '/get', JSON.stringify({ state: '' }), false);\n  });\n}\n\nfunction zmTransportStart() {\n  var t = zmThing();\n  if (!t) { console.warn('Zigbee radio map: thing ' + ZM.thing + ' not found, no query and no switching'); return; }\n  if (ZM.switchThing) {\n    var child = zmBridgeChild();\n    if (child) {\n      console.warn('Zigbee radio map: thing ' + ZM.thing + ' is the bridge of ' + child +\n        ', so it is not switched on and off (set switchThing to false or use a second broker thing)');\n    } else if (!t.isEnabled) {\n      t.setEnabled(true);\n    }\n  }\n  if (!ZM.query.length) return;\n  var tries = 0;\n  var check = function () {\n    cache.private.remove('zmQueryTimer');\n    var th = zmThing();\n    if (th && String(th.status) === 'ONLINE') { zmQuery(); return; }\n    if (++tries > 15) { console.warn('Zigbee radio map: thing ' + ZM.thing + ' not ONLINE after 15 s, no query sent'); return; }\n    cache.private.put('zmQueryTimer', setTimeout(check, 1000));\n  };\n  check();\n}\n\nfunction zmTransportStop() {\n  var id = cache.private.get('zmQueryTimer');\n  if (id !== null && id !== undefined) clearTimeout(id);\n  cache.private.remove('zmQueryTimer');\n  if (!ZM.switchThing) return;\n  var t = zmThing();\n  if (!t || zmBridgeChild()) return;\n  if (t.isEnabled) t.setEnabled(false);\n}\n","demo":"// SPDX-License-Identifier: EPL-2.0\n// ===== Zigbee radio map: demo transport =====\n// No MQTT: while live is ON, one chained timer feeds invented messages into zmMessage, so the demo exercises the\n// real parsing and the real data format. ZM.demo = { seed, devices: [{ name, router, q, mode: ok|offline|silent }] }.\n// Every 250 ms one device of the start queue reports (routers first, so they show up within 2 s); 5 s after the\n// start the \"offline\" devices go offline; afterwards every 2 s a random \"ok\" device reports q = base +- 8.\n\nfunction zmTransportStart() {\n  zmTransportStop();\n  var devs = ZM.demo.devices, base = ZM.baseTopic + '/';\n  var seed = ZM.demo.seed || 1;\n  var rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };   // Park-Miller LCG\n  var report = function (d) {\n    var q = Math.max(0, Math.min(255, d.q + Math.floor(rnd() * 17) - 8));\n    zmMessage(base + d.name + '#' + JSON.stringify({ linkquality: q }));\n  };\n  var queue = [], ok = [], i;\n  for (i = 0; i < devs.length; i++) {\n    if (devs[i].mode === 'silent') continue;\n    zmMessage(base + devs[i].name + '/availability#online');\n    if (devs[i].mode === 'ok') ok.push(devs[i]);\n  }\n  for (i = 0; i < devs.length; i++) if (devs[i].mode === 'ok' && devs[i].router) queue.push(devs[i]);\n  for (i = 0; i < devs.length; i++) if (devs[i].mode === 'ok' && !devs[i].router) queue.push(devs[i]);\n  for (i = 0; i < devs.length; i++) if (devs[i].mode === 'offline') queue.push(devs[i]);\n  var tick = 0;\n  var step = function () {\n    tick++;\n    if (tick <= queue.length) report(queue[tick - 1]);\n    if (tick === 20) {\n      for (var k = 0; k < devs.length; k++) {\n        if (devs[k].mode === 'offline') zmMessage(base + devs[k].name + '/availability#offline');\n      }\n    }\n    if (tick > queue.length && tick % 8 === 0 && ok.length) report(ok[Math.floor(rnd() * ok.length)]);\n    cache.private.put('zmDemoTimer', setTimeout(step, 250));\n  };\n  cache.private.put('zmDemoTimer', setTimeout(step, 250));\n}\n\nfunction zmTransportStop() {\n  var id = cache.private.get('zmDemoTimer');\n  if (id !== null && id !== undefined) clearTimeout(id);\n  cache.private.remove('zmDemoTimer');\n}\n"};
+</script>
+</head>
+<body>
+<header>
+  <h1 data-t="title"></h1>
+  <p data-t="intro"></p>
+</header>
+<main>
+  <section>
+    <h2 data-t="formTitle"></h2>
+    <div class="field">
+      <label for="zm-lang" data-t="langLabel"></label>
+      <select id="zm-lang"><option value="en">English</option><option value="de">Deutsch</option></select>
+      <div class="hint" data-t="langHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-image" data-t="imageLabel"></label>
+      <input id="zm-image" type="file" accept="image/*">
+      <div class="row2" style="margin-top:6px">
+        <input id="zm-width" type="number" min="100" step="1" value="1000" aria-label="width">
+        <input id="zm-height" type="number" min="100" step="1" value="800" aria-label="height">
+      </div>
+      <div class="hint" data-t="imageHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-url" data-t="urlLabel"></label>
+      <input id="zm-url" type="text" value="/static/floorplan.png">
+      <div class="hint" data-t="urlHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-devices" data-t="devicesLabel"></label>
+      <textarea id="zm-devices" rows="8" spellcheck="false"></textarea>
+      <div class="hint" data-t="devicesHint"></div>
+    </div>
+    <div class="field">
+      <label for="zm-thing" data-t="thingLabel"></label>
+      <input id="zm-thing" type="text" placeholder="mqtt:broker:mybroker" spellcheck="false">
+      <div class="hint" data-t="thingHint"></div>
+    </div>
+    <div class="field">
+      <label class="inline"><input id="zm-switch" type="checkbox"> <span data-t="switchLabel"></span></label>
+      <div class="hint" data-t="switchHint"></div>
+    </div>
+    <details>
+      <summary data-t="advanced"></summary>
+      <div class="field">
+        <label for="zm-base" data-t="baseLabel"></label>
+        <input id="zm-base" type="text" value="zigbee2mqtt" spellcheck="false">
+        <div class="hint" data-t="baseHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-timeout" data-t="timeoutLabel"></label>
+        <input id="zm-timeout" type="number" min="1" max="120" step="1" value="15">
+        <div class="hint" data-t="timeoutHint"></div>
+      </div>
+      <div class="field">
+        <label data-t="itemsLabel"></label>
+        <div class="row2">
+          <input id="zm-live" type="text" value="ZigbeeMap_Live" aria-label="live item" spellcheck="false">
+          <input id="zm-data" type="text" value="ZigbeeMap_Data" aria-label="data item" spellcheck="false">
+        </div>
+        <div class="hint" data-t="itemsHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-label" data-t="pageLabelLabel"></label>
+        <input id="zm-label" type="text">
+        <div class="hint" data-t="pageLabelHint"></div>
+      </div>
+      <div class="field">
+        <label for="zm-query" data-t="queryLabel"></label>
+        <textarea id="zm-query" rows="4" spellcheck="false"></textarea>
+        <div class="hint" data-t="queryHint"></div>
+      </div>
+    </details>
+  </section>
+  <section>
+    <h2 data-t="resultTitle"></h2>
+    <div id="zm-summary"></div>
+    <ul id="zm-errors"></ul>
+    <h3 data-t="channelsTitle"></h3>
+    <div id="zm-channels"></div>
+    <h3 data-t="ruleTitle"></h3>
+    <div class="hint" data-t="ruleHint"></div>
+    <textarea id="zm-rule" class="out" readonly spellcheck="false"></textarea>
+    <div class="buttons"><button id="zm-rule-copy" data-t="copy"></button><button id="zm-rule-dl" class="secondary" data-t="download"></button><span class="copied" id="zm-rule-msg"></span></div>
+    <h3 data-t="pageTitle"></h3>
+    <div class="hint" data-t="pageHint"></div>
+    <textarea id="zm-page" class="out" readonly spellcheck="false"></textarea>
+    <div class="buttons"><button id="zm-page-copy" data-t="copy"></button><button id="zm-page-dl" class="secondary" data-t="download"></button><span class="copied" id="zm-page-msg"></span></div>
+    <h3 data-t="stepsTitle"></h3>
+    <ol id="zm-steps"></ol>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var UI = {
+    en: {
+      title: 'Zigbee radio map generator',
+      intro: 'Creates an openHAB floor plan page that shows the live link quality (LQI) of your Zigbee2MQTT devices, and the rule that feeds it. Everything happens in this browser tab; nothing is sent anywhere.',
+      formTitle: 'Your installation',
+      langLabel: 'Language', langHint: 'For this form and for the texts on the generated page.',
+      imageLabel: 'Floor plan image (width × height in pixels)', imageHint: 'Choose the image file to read its size (it stays on your computer), or type width and height.',
+      urlLabel: 'Image URL in openHAB', urlHint: 'Put the image into conf/html/ of openHAB; conf/html/floorplan.png is served as /static/floorplan.png.',
+      devicesLabel: 'Device list',
+      devicesHint: 'Paste the JSON of zigbee2mqtt/bridge/devices, e.g. from: mosquitto_sub -h <broker> -t zigbee2mqtt/bridge/devices -C 1. Or one name per line: name, name;router, name;coordinator.',
+      thingLabel: 'MQTT broker thing UID', thingHint: 'Settings → Things → your broker → the UID under its name.',
+      switchLabel: 'This is a second broker thing used only for the map: switch it on only while live',
+      switchHint: 'Leave this off if the thing is your main broker. The rule never switches a broker that other things use.',
+      advanced: 'Advanced',
+      baseLabel: 'Zigbee2MQTT base topic', baseHint: 'As in the Zigbee2MQTT settings (mqtt.base_topic).',
+      timeoutLabel: 'Live time (minutes)', timeoutHint: 'Live switches itself off after this time.',
+      itemsLabel: 'Item names (live switch, data)', itemsHint: 'The rule creates both items when you press "Run now".',
+      pageLabelLabel: 'Page title', pageLabelHint: 'Empty: "Zigbee radio map" in the chosen language.',
+      queryLabel: 'Devices asked for a fresh value at live start',
+      queryHint: 'One name per line. Filled from the device list (routers with a readable state) until you edit it.',
+      resultTitle: 'Result',
+      summary: function (n, r, e, c) { return n + ' devices: ' + r + ' routers, ' + e + ' end devices, coordinator ' + (c ? 'yes' : 'no'); },
+      channelsTitle: '1. Channels on the broker thing',
+      channels: function (thing, base) {
+        return 'Thing ' + code(thing || 'mqtt:broker:…') + ' → Channels → Add Channel → Publish Trigger, twice. Click "Show advanced" to see the separator.' +
+          '<ol><li>Channel ID ' + code('zbmap') + ', MQTT topic ' + code(base + '/+') + ', separator ' + code('#') + '</li>' +
+          '<li>Channel ID ' + code('zbmap_avail') + ', MQTT topic ' + code(base + '/+/availability') + ', separator ' + code('#') + '</li></ol>';
+      },
+      ruleTitle: '2. Rule', ruleHint: 'Rules → + → Code tab → replace everything with this text → Save → "Run now" once (creates the two items).',
+      pageTitle: '3. Page', pageHint: 'Pages → + → Floor plan → Code tab → replace everything with this text → Save.',
+      copy: 'Copy', download: 'Download', copied: 'copied', copyFailed: 'select the text and copy it by hand',
+      stepsTitle: 'Afterwards',
+      steps: ['Open the page and tap "Live". Markers turn from white to coloured as the devices report.',
+        'Markers without a position are parked in a grid across the image, sorted by name: open the page editor, drag them to their rooms, delete the note label, save.',
+        'A device added later: copy any marker of the same kind in the page editor and type the new device name into "name".',
+        'Optional: exclude the two items from persistence (e.g. !ZigbeeMap_Live and !ZigbeeMap_Data in the persistence configuration).']
+    },
+    de: {
+      title: 'Zigbee-Funkkarte: Generator',
+      intro: 'Erzeugt eine openHAB-Raumplan-Seite, die die Live-Linkqualität (LQI) der Zigbee2MQTT-Geräte zeigt, und die Regel dazu. Alles passiert in diesem Browser-Tab; nichts wird verschickt.',
+      formTitle: 'Deine Installation',
+      langLabel: 'Sprache', langHint: 'Für dieses Formular und für die Texte auf der erzeugten Seite.',
+      imageLabel: 'Raumplan-Bild (Breite × Höhe in Pixeln)', imageHint: 'Bilddatei wählen, um ihre Größe zu lesen (sie bleibt auf dem Rechner), oder Breite und Höhe eintippen.',
+      urlLabel: 'Bild-URL in openHAB', urlHint: 'Das Bild gehört nach conf/html/ von openHAB; conf/html/floorplan.png heißt dann /static/floorplan.png.',
+      devicesLabel: 'Geräteliste',
+      devicesHint: 'Das JSON von zigbee2mqtt/bridge/devices einfügen, z. B. aus: mosquitto_sub -h <broker> -t zigbee2mqtt/bridge/devices -C 1. Oder ein Name pro Zeile: name, name;router, name;coordinator.',
+      thingLabel: 'UID des MQTT-Broker-Things', thingHint: 'Einstellungen → Things → dein Broker → die UID unter dem Namen.',
+      switchLabel: 'Das ist ein zweites Broker-Thing nur für die Karte: nur während Live einschalten',
+      switchHint: 'Aus lassen, wenn es der Haupt-Broker ist. Die Regel schaltet nie einen Broker, den andere Things benutzen.',
+      advanced: 'Erweitert',
+      baseLabel: 'Zigbee2MQTT-Basis-Topic', baseHint: 'Wie in den Zigbee2MQTT-Einstellungen (mqtt.base_topic).',
+      timeoutLabel: 'Live-Dauer (Minuten)', timeoutHint: 'Danach schaltet sich Live selbst aus.',
+      itemsLabel: 'Item-Namen (Live-Schalter, Daten)', itemsHint: 'Die Regel legt beide Items an, wenn du „Jetzt ausführen“ drückst.',
+      pageLabelLabel: 'Seitentitel', pageLabelHint: 'Leer: „Zigbee-Funkkarte“ in der gewählten Sprache.',
+      queryLabel: 'Geräte, die beim Live-Start nach einem frischen Wert gefragt werden',
+      queryHint: 'Ein Name pro Zeile. Wird aus der Geräteliste gefüllt (Router mit lesbarem state), bis du es änderst.',
+      resultTitle: 'Ergebnis',
+      summary: function (n, r, e, c) { return n + ' Geräte: ' + r + ' Router, ' + e + ' Endgeräte, Koordinator ' + (c ? 'ja' : 'nein'); },
+      channelsTitle: '1. Kanäle am Broker-Thing',
+      channels: function (thing, base) {
+        return 'Thing ' + code(thing || 'mqtt:broker:…') + ' → Channels → Add Channel → Publish Trigger, zweimal. „Show advanced“ anklicken, dann erscheint der Separator.' +
+          '<ol><li>Channel-ID ' + code('zbmap') + ', MQTT-Topic ' + code(base + '/+') + ', Separator ' + code('#') + '</li>' +
+          '<li>Channel-ID ' + code('zbmap_avail') + ', MQTT-Topic ' + code(base + '/+/availability') + ', Separator ' + code('#') + '</li></ol>';
+      },
+      ruleTitle: '2. Regel', ruleHint: 'Regeln → + → Code-Tab → alles durch diesen Text ersetzen → Speichern → einmal „Jetzt ausführen“ (legt die zwei Items an).',
+      pageTitle: '3. Seite', pageHint: 'Seiten → + → Raumplan → Code-Tab → alles durch diesen Text ersetzen → Speichern.',
+      copy: 'Kopieren', download: 'Herunterladen', copied: 'kopiert', copyFailed: 'Text markieren und von Hand kopieren',
+      stepsTitle: 'Danach',
+      steps: ['Seite öffnen und „Live“ antippen. Die Marker werden farbig, sobald die Geräte melden.',
+        'Marker ohne Platz stehen als Raster über dem Bild, nach Namen sortiert: im Seiten-Editor in ihre Räume ziehen, den Hinweis löschen, speichern.',
+        'Ein später hinzugefügtes Gerät: im Seiten-Editor einen Marker der gleichen Art kopieren und den neuen Gerätenamen bei „name“ eintragen.',
+        'Optional: die zwei Items von der Persistenz ausnehmen (z. B. !ZigbeeMap_Live und !ZigbeeMap_Data in der Persistenz-Konfiguration).']
+    }
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function code(s) { return '<code>' + esc(s) + '</code>'; }
+
+  var queryEdited = false, last = { errors: [], rule: '', page: '' };
+
+  function lang() { return $('zm-lang').value === 'de' ? 'de' : 'en'; }
+
+  function applyTexts() {
+    var U = UI[lang()];
+    document.documentElement.lang = lang();
+    var els = document.querySelectorAll('[data-t]');
+    for (var i = 0; i < els.length; i++) {
+      var v = U[els[i].getAttribute('data-t')];
+      if (typeof v === 'string') els[i].textContent = v;
+    }
+    $('zm-label').placeholder = ZMGen.TEXTS[lang()].pageLabel;
+  }
+
+  function queryNames() {
+    return $('zm-query').value.split(/\r?\n/).filter(function (l) { return l.trim() !== ''; });
+  }
+
+  function regenerate() {
+    var L = lang(), U = UI[L];
+    var parsed = ZMGen.parseDevices($('zm-devices').value, L);
+    if (!queryEdited) {
+      $('zm-query').value = parsed.devices.filter(function (d) { return d.query; }).map(function (d) { return d.name; }).join('\n');
+    }
+    var opts = { lang: L, label: $('zm-label').value, imageUrl: $('zm-url').value.trim(),
+      imageWidth: $('zm-width').value, imageHeight: $('zm-height').value,
+      liveItem: $('zm-live').value.trim(), dataItem: $('zm-data').value.trim(), thing: $('zm-thing').value.trim(),
+      switchThing: $('zm-switch').checked, baseTopic: $('zm-base').value.trim(), timeoutMin: $('zm-timeout').value };
+    var errors = parsed.errors.concat(ZMGen.validate(opts));
+    var rule = '', page = '';
+    if (!errors.length) {
+      page = ZMGen.generatePage({ lang: L, label: opts.label, imageUrl: opts.imageUrl, imageWidth: Number(opts.imageWidth),
+        imageHeight: Number(opts.imageHeight), liveItem: opts.liveItem, dataItem: opts.dataItem, devices: parsed.devices });
+      rule = ZMGen.generateRule({ mode: 'mqtt', uid: 'zigbee_radio_map', label: '', liveItem: opts.liveItem, dataItem: opts.dataItem,
+        thing: opts.thing, switchThing: opts.switchThing, baseTopic: opts.baseTopic, timeoutMin: Number(opts.timeoutMin),
+        query: queryNames() }, ZMGen.SOURCES);
+    }
+    var count = function (t) { return parsed.devices.filter(function (d) { return d.type === t; }).length; };
+    $('zm-summary').textContent = parsed.devices.length ? U.summary(parsed.devices.length, count('router'), count('enddevice'), count('coordinator') > 0) : '';
+    $('zm-errors').innerHTML = errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
+    $('zm-channels').innerHTML = U.channels(opts.thing, opts.baseTopic || 'zigbee2mqtt');
+    $('zm-steps').innerHTML = U.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('');
+    $('zm-rule').value = rule;
+    $('zm-page').value = page;
+    ['zm-rule-copy', 'zm-rule-dl', 'zm-page-copy', 'zm-page-dl'].forEach(function (id) { $(id).disabled = !!errors.length; });
+    $('zm-rule-msg').textContent = ''; $('zm-page-msg').textContent = '';
+    last = { errors: errors, rule: rule, page: page };
+  }
+
+  function copy(areaId, msgId) {
+    var text = $(areaId).value, U = UI[lang()];
+    var done = function () { $(msgId).textContent = U.copied; };
+    var fallback = function () {
+      var a = $(areaId);
+      a.focus(); a.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      $(msgId).textContent = ok ? U.copied : U.copyFailed;
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+
+  function download(areaId, name) {
+    var url = URL.createObjectURL(new Blob([$(areaId).value], { type: 'text/yaml;charset=utf-8' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function readImage() {
+    var f = $('zm-image').files && $('zm-image').files[0];
+    if (!f) return;
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function () {
+      $('zm-width').value = img.naturalWidth; $('zm-height').value = img.naturalHeight;
+      URL.revokeObjectURL(url); regenerate();
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); };
+    img.src = url;
+  }
+
+  var FIELDS = { lang: 'zm-lang', url: 'zm-url', devices: 'zm-devices', thing: 'zm-thing', width: 'zm-width', height: 'zm-height',
+    base: 'zm-base', timeout: 'zm-timeout', liveItem: 'zm-live', dataItem: 'zm-data', label: 'zm-label', query: 'zm-query' };
+
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'zm-query') queryEdited = true;
+    if (e.target && e.target.id === 'zm-lang') applyTexts();
+    regenerate();
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'zm-image') { readImage(); return; }
+    if (e.target && e.target.id === 'zm-lang') applyTexts();
+    regenerate();
+  });
+  $('zm-rule-copy').addEventListener('click', function () { copy('zm-rule', 'zm-rule-msg'); });
+  $('zm-page-copy').addEventListener('click', function () { copy('zm-page', 'zm-page-msg'); });
+  $('zm-rule-dl').addEventListener('click', function () { download('zm-rule', 'zigbee_radio_map_rule.yaml'); });
+  $('zm-page-dl').addEventListener('click', function () { download('zm-page', 'zigbee_radio_map_page.yaml'); });
+
+  // for tests: set({ lang, url, devices, thing, switchThing, width, height, base, timeout, liveItem, dataItem, label, query })
+  window.ZMApp = {
+    state: function () { return { errors: last.errors.slice(), rule: last.rule, page: last.page }; },
+    set: function (values) {
+      Object.keys(values).forEach(function (k) {
+        if (k === 'switchThing') $('zm-switch').checked = !!values[k];
+        else if (FIELDS[k]) $(FIELDS[k]).value = values[k];
+        if (k === 'query') queryEdited = true;
+      });
+      applyTexts();
+      regenerate();
+      return this.state();
+    }
+  };
+
+  applyTexts();
+  regenerate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+[
+  {
+    "friendly_name": "Coordinator",
+    "ieee_address": "0x00124b0000000001",
+    "type": "Coordinator",
+    "power_source": null,
+    "definition": null,
+    "disabled": false
+  },
+  {
+    "friendly_name": "Kitchen_CeilingLight",
+    "ieee_address": "0x00158d0000000002",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "light",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 190,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "Kitchen_Plug",
+    "ieee_address": "0x00158d0000000003",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "switch",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 150,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "LivingRoom_CeilingLight",
+    "ieee_address": "0x00158d0000000004",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "light",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 210,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "LivingRoom_TV_Plug",
+    "ieee_address": "0x00158d0000000005",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "switch",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 135,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "Sofa_Lamp",
+    "ieee_address": "0x00158d0000000006",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "switch",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 170,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "Toilet_Light",
+    "ieee_address": "0x00158d0000000007",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "light",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 95,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "Stairs_Light",
+    "ieee_address": "0x00158d0000000008",
+    "type": "Router",
+    "power_source": "Mains (single phase)",
+    "definition": {
+      "exposes": [
+        {
+          "type": "light",
+          "features": [
+            {
+              "type": "binary",
+              "name": "state",
+              "property": "state",
+              "access": 7,
+              "value_on": "ON",
+              "value_off": "OFF"
+            }
+          ]
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "q": 125,
+      "mode": "ok"
+    }
+  },
+  {
+    "friendly_name": "Kitchen_Window",
+    "ieee_address": "0x00158d0000000009",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "contact",
+          "property": "contact",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 85
+    }
+  },
+  {
+    "friendly_name": "Kitchen_Temperature",
+    "ieee_address": "0x00158d000000000a",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "numeric",
+          "name": "temperature",
+          "property": "temperature",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "humidity",
+          "property": "humidity",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "silent"
+    }
+  },
+  {
+    "friendly_name": "LivingRoom_Window",
+    "ieee_address": "0x00158d000000000b",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "contact",
+          "property": "contact",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 160
+    }
+  },
+  {
+    "friendly_name": "LivingRoom_Motion",
+    "ieee_address": "0x00158d000000000c",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "occupancy",
+          "property": "occupancy",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "illuminance",
+          "property": "illuminance",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 140
+    }
+  },
+  {
+    "friendly_name": "LivingRoom_Thermostat",
+    "ieee_address": "0x00158d000000000d",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "numeric",
+          "name": "local_temperature",
+          "property": "local_temperature",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "offline",
+      "q": 110
+    }
+  },
+  {
+    "friendly_name": "Toilet_Motion",
+    "ieee_address": "0x00158d000000000e",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "occupancy",
+          "property": "occupancy",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 70
+    }
+  },
+  {
+    "friendly_name": "Corridor_Motion",
+    "ieee_address": "0x00158d000000000f",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "occupancy",
+          "property": "occupancy",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 62
+    }
+  },
+  {
+    "friendly_name": "Front_Door",
+    "ieee_address": "0x00158d0000000010",
+    "type": "EndDevice",
+    "power_source": "Battery",
+    "definition": {
+      "exposes": [
+        {
+          "type": "binary",
+          "name": "contact",
+          "property": "contact",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "battery",
+          "property": "battery",
+          "access": 1
+        },
+        {
+          "type": "numeric",
+          "name": "linkquality",
+          "property": "linkquality",
+          "access": 1
+        }
+      ]
+    },
+    "disabled": false,
+    "demo": {
+      "mode": "ok",
+      "q": 22
+    }
+  }
+]

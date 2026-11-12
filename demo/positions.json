@@ -1,0 +1,18 @@
+{
+  "Coordinator": "316,560",
+  "Kitchen_CeilingLight": "621,285",
+  "Kitchen_Plug": "656,370",
+  "Kitchen_Window": "686,180",
+  "Kitchen_Temperature": "541,235",
+  "LivingRoom_CeilingLight": "396,430",
+  "LivingRoom_TV_Plug": "286,600",
+  "Sofa_Lamp": "171,530",
+  "LivingRoom_Window": "496,490",
+  "LivingRoom_Motion": "446,300",
+  "LivingRoom_Thermostat": "216,630",
+  "Toilet_Light": "636,75",
+  "Toilet_Motion": "551,125",
+  "Stairs_Light": "326,190",
+  "Corridor_Motion": "166,300",
+  "Front_Door": "51,330"
+}
